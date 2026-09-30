@@ -2,441 +2,317 @@ import { useEffect, useState } from "react"
 import heroImg from "./assets/hero.png"
 import "./App.css"
 
-const API =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:3000"
+// LIVE PRODUCTION BACKEND
+const API = "https://mydocs-v2-production.up.railway.app"
 
 function App() {
-  const [token, setToken] =
-    useState(
-      localStorage.getItem("token")
-    )
+  const [token, setToken] = useState(
+    localStorage.getItem("token")
+  )
 
   const [isRegistering, setIsRegistering] =
     useState(false)
 
   const [name, setName] = useState("")
-  const [email, setEmail] =
-    useState("")
-  const [password, setPassword] =
-    useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
 
-  const [authMessage, setAuthMessage] =
-    useState("")
+  const [authMessage, setAuthMessage] = useState("")
 
-  const [documents, setDocuments] =
-    useState([])
+  const [documents, setDocuments] = useState([])
 
-  const [search, setSearch] =
-    useState("")
-
-  const [category, setCategory] =
-    useState("All")
-
+  const [search, setSearch] = useState("")
+  const [category, setCategory] = useState("All")
   const [uploadCategory, setUploadCategory] =
     useState("Other")
 
-  const loadDocuments =
-    async () => {
-      if (!token) {
+  // =========================
+  // LOAD DOCUMENTS
+  // =========================
+
+  const loadDocuments = async () => {
+    if (!token) return
+
+    const params = new URLSearchParams()
+
+    if (search.trim() !== "") {
+      params.append("search", search.trim())
+    }
+
+    if (category !== "All") {
+      params.append("category", category)
+    }
+
+    try {
+      const response = await fetch(
+        `${API}/api/documents?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem("token")
+        setToken(null)
         return
       }
 
-      const params =
-        new URLSearchParams()
+      const data = await response.json()
 
-      if (search.trim() !== "") {
-        params.append(
-          "search",
-          search.trim()
-        )
+      if (Array.isArray(data)) {
+        setDocuments(data)
       }
-
-      if (category !== "All") {
-        params.append(
-          "category",
-          category
-        )
-      }
-
-      try {
-        const response =
-          await fetch(
-            `${API}/api/documents?${params.toString()}`,
-            {
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-              },
-            }
-          )
-
-        if (
-          response.status === 401 ||
-          response.status === 403
-        ) {
-          localStorage.removeItem(
-            "token"
-          )
-
-          setToken(null)
-          return
-        }
-
-        const data =
-          await response.json()
-
-        if (
-          Array.isArray(data)
-        ) {
-          setDocuments(data)
-        }
-      } catch (error) {
-        console.log(
-          "Failed to load documents",
-          error
-        )
-      }
+    } catch (error) {
+      console.error("Failed to load documents:", error)
     }
+  }
 
   useEffect(() => {
     loadDocuments()
-  }, [
-    token,
-    search,
-    category,
-  ])
+  }, [token, search, category])
 
-  // -------------------------
+  // =========================
   // LOGIN / REGISTER
-  // -------------------------
+  // =========================
 
-  const handleAuth =
-    async () => {
-      setAuthMessage("")
+  const handleAuth = async () => {
+    setAuthMessage("")
 
-      const url =
-        isRegistering
-          ? `${API}/api/register`
-          : `${API}/api/login`
+    const url = isRegistering
+      ? `${API}/api/register`
+      : `${API}/api/login`
 
-      const body =
-        isRegistering
-          ? {
-              name,
-              email,
-              password,
-            }
-          : {
-              email,
-              password,
-            }
-
-      try {
-        const response =
-          await fetch(url, {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body:
-              JSON.stringify(body),
-          })
-
-        const data =
-          await response.json()
-
-        if (!response.ok) {
-          setAuthMessage(
-            data.error ||
-              "Authentication failed"
-          )
-
-          return
+    const body = isRegistering
+      ? {
+          name,
+          email,
+          password,
+        }
+      : {
+          email,
+          password,
         }
 
-        if (isRegistering) {
-          setAuthMessage(
-            "Registration successful. Please login."
-          )
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
 
-          setIsRegistering(
-            false
-          )
+      const data = await response.json()
 
-          setName("")
-          setPassword("")
-        } else {
-          localStorage.setItem(
-            "token",
-            data.token
-          )
-
-          setToken(data.token)
-
-          setPassword("")
-          setAuthMessage("")
-        }
-      } catch (error) {
+      if (!response.ok) {
         setAuthMessage(
-          "Could not connect to backend"
+          data.error || "Authentication failed"
         )
-      }
-    }
-
-  // -------------------------
-  // LOGOUT
-  // -------------------------
-
-  const handleLogout =
-    () => {
-      localStorage.removeItem(
-        "token"
-      )
-
-      setToken(null)
-      setDocuments([])
-    }
-
-  // -------------------------
-  // UPLOAD
-  // -------------------------
-
-  const handleFileChange =
-    async (event) => {
-      const file =
-        event.target.files[0]
-
-      if (!file) {
         return
       }
 
-      const formData =
-        new FormData()
-
-      formData.append(
-        "file",
-        file
-      )
-
-      formData.append(
-        "category",
-        uploadCategory
-      )
-
-      try {
-        const response =
-          await fetch(
-            `${API}/api/upload`,
-            {
-              method: "POST",
-
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-              },
-
-              body: formData,
-            }
-          )
-
-        const data =
-          await response.json()
-
-        if (!response.ok) {
-          console.log(
-            data.error ||
-              "Upload failed"
-          )
-
-          return
-        }
-
-        await loadDocuments()
-
-        event.target.value = ""
-      } catch (error) {
-        console.log(
-          "Upload failed",
-          error
+      if (isRegistering) {
+        setAuthMessage(
+          "Registration successful. Please login."
         )
+
+        setIsRegistering(false)
+        setName("")
+        setPassword("")
+      } else {
+        localStorage.setItem("token", data.token)
+        setToken(data.token)
+        setPassword("")
+        setAuthMessage("")
       }
+    } catch (error) {
+      console.error(error)
+
+      setAuthMessage(
+        "Could not connect to backend"
+      )
     }
+  }
 
-  // -------------------------
-  // VIEW
-  // -------------------------
+  // =========================
+  // LOGOUT
+  // =========================
 
-  const handleView =
-    async (doc) => {
-      const newWindow =
-        window.open(
-          "",
-          "_blank"
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    setToken(null)
+    setDocuments([])
+  }
+
+  // =========================
+  // UPLOAD
+  // =========================
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0]
+
+    if (!file) return
+
+    const formData = new FormData()
+
+    formData.append("file", file)
+    formData.append("category", uploadCategory)
+
+    try {
+      const response = await fetch(
+        `${API}/api/upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error(
+          data.error || "Upload failed"
         )
+        return
+      }
 
-      try {
-        const response =
-          await fetch(
-            `${API}/api/view/${doc.id}`,
-            {
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-              },
-            }
-          )
+      await loadDocuments()
 
-        if (!response.ok) {
-          newWindow?.close()
+      event.target.value = ""
+    } catch (error) {
+      console.error("Upload failed:", error)
+    }
+  }
 
-          console.log(
-            "Unable to view document"
-          )
+  // =========================
+  // VIEW
+  // =========================
 
-          return
+  const handleView = async (doc) => {
+    const newWindow = window.open("", "_blank")
+
+    try {
+      const response = await fetch(
+        `${API}/api/view/${doc.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      )
 
-        const blob =
-          await response.blob()
-
-        const url =
-          URL.createObjectURL(
-            blob
-          )
-
-        if (newWindow) {
-          newWindow.location.href =
-            url
-        }
-
-        setTimeout(() => {
-          URL.revokeObjectURL(
-            url
-          )
-        }, 60000)
-      } catch (error) {
+      if (!response.ok) {
         newWindow?.close()
 
-        console.log(
-          "View failed",
-          error
+        console.error(
+          "Unable to view document"
         )
-      }
-    }
 
-  // -------------------------
+        return
+      }
+
+      const blob = await response.blob()
+
+      const url = URL.createObjectURL(blob)
+
+      if (newWindow) {
+        newWindow.location.href = url
+      }
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 60000)
+    } catch (error) {
+      newWindow?.close()
+
+      console.error("View failed:", error)
+    }
+  }
+
+  // =========================
   // DOWNLOAD
-  // -------------------------
+  // =========================
 
-  const handleDownload =
-    async (doc) => {
-      try {
-        const response =
-          await fetch(
-            `${API}/api/download/${doc.id}`,
-            {
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-              },
-            }
-          )
-
-        if (!response.ok) {
-          console.log(
-            "Unable to download document"
-          )
-
-          return
+  const handleDownload = async (doc) => {
+    try {
+      const response = await fetch(
+        `${API}/api/download/${doc.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      )
 
-        const blob =
-          await response.blob()
-
-        const url =
-          URL.createObjectURL(
-            blob
-          )
-
-        const link =
-          window.document.createElement(
-            "a"
-          )
-
-        link.href = url
-
-        link.download =
-          doc.name
-
-        window.document.body.appendChild(
-          link
+      if (!response.ok) {
+        console.error(
+          "Unable to download document"
         )
-
-        link.click()
-
-        link.remove()
-
-        setTimeout(() => {
-          URL.revokeObjectURL(
-            url
-          )
-        }, 1000)
-      } catch (error) {
-        console.log(
-          "Download failed",
-          error
-        )
+        return
       }
-    }
 
-  // -------------------------
+      const blob = await response.blob()
+
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement("a")
+
+      link.href = url
+      link.download = doc.name
+
+      document.body.appendChild(link)
+
+      link.click()
+
+      link.remove()
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 1000)
+    } catch (error) {
+      console.error("Download failed:", error)
+    }
+  }
+
+  // =========================
   // DELETE
-  // -------------------------
+  // =========================
 
-  const handleDelete =
-    async (id) => {
-      try {
-        const response =
-          await fetch(
-            `${API}/api/documents/${id}`,
-            {
-              method: "DELETE",
-
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-              },
-            }
-          )
-
-        const data =
-          await response.json()
-
-        if (!response.ok) {
-          console.log(
-            data.error ||
-              "Delete failed"
-          )
-
-          return
+  const handleDelete = async (id) => {
+    try {
+      const response = await fetch(
+        `${API}/api/documents/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      )
 
-        await loadDocuments()
-      } catch (error) {
-        console.log(
-          "Delete failed",
-          error
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error(
+          data.error || "Delete failed"
         )
+        return
       }
-    }
 
-  // -------------------------
+      await loadDocuments()
+    } catch (error) {
+      console.error("Delete failed:", error)
+    }
+  }
+
+  // =========================
   // LOGIN SCREEN
-  // -------------------------
+  // =========================
 
   if (!token) {
     return (
@@ -452,13 +328,8 @@ function App() {
         </div>
 
         <header>
-          <h1>
-            MyDocs
-          </h1>
-
-          <p>
-            Personal Document Vault
-          </p>
+          <h1>MyDocs</h1>
+          <p>Personal Document Vault</p>
         </header>
 
         <div>
@@ -473,11 +344,8 @@ function App() {
               type="text"
               placeholder="Name"
               value={name}
-              onChange={
-                (event) =>
-                  setName(
-                    event.target.value
-                  )
+              onChange={(event) =>
+                setName(event.target.value)
               }
             />
           )}
@@ -486,11 +354,8 @@ function App() {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={
-              (event) =>
-                setEmail(
-                  event.target.value
-                )
+            onChange={(event) =>
+              setEmail(event.target.value)
             }
           />
 
@@ -498,17 +363,12 @@ function App() {
             type="password"
             placeholder="Password"
             value={password}
-            onChange={
-              (event) =>
-                setPassword(
-                  event.target.value
-                )
+            onChange={(event) =>
+              setPassword(event.target.value)
             }
           />
 
-          <button
-            onClick={handleAuth}
-          >
+          <button onClick={handleAuth}>
             {isRegistering
               ? "Register"
               : "Login"}
@@ -528,17 +388,15 @@ function App() {
               : "Create an account"}
           </button>
 
-          <p>
-            {authMessage}
-          </p>
+          <p>{authMessage}</p>
         </div>
       </>
     )
   }
 
-  // -------------------------
+  // =========================
   // MAIN VAULT
-  // -------------------------
+  // =========================
 
   return (
     <>
@@ -553,18 +411,11 @@ function App() {
       </div>
 
       <header>
-        <h1>
-          MyDocs
-        </h1>
-
-        <p>
-          Personal Document Vault
-        </p>
+        <h1>MyDocs</h1>
+        <p>Personal Document Vault</p>
       </header>
 
-      <button
-        onClick={handleLogout}
-      >
+      <button onClick={handleLogout}>
         Logout
       </button>
 
@@ -575,11 +426,8 @@ function App() {
         type="text"
         placeholder="Search documents..."
         value={search}
-        onChange={
-          (event) =>
-            setSearch(
-              event.target.value
-            )
+        onChange={(event) =>
+          setSearch(event.target.value)
         }
       />
 
@@ -588,11 +436,8 @@ function App() {
 
       <select
         value={uploadCategory}
-        onChange={
-          (event) =>
-            setUploadCategory(
-              event.target.value
-            )
+        onChange={(event) =>
+          setUploadCategory(event.target.value)
         }
       >
         <option value="Personal">
@@ -623,26 +468,20 @@ function App() {
       <input
         type="file"
         id="fileInput"
-        onChange={
-          handleFileChange
-        }
+        onChange={handleFileChange}
       />
 
       <button
         onClick={() =>
-          window.document
-            .getElementById(
-              "fileInput"
-            )
+          document
+            .getElementById("fileInput")
             .click()
         }
       >
         + Upload Document
       </button>
 
-      <h3>
-        Categories
-      </h3>
+      <h3>Categories</h3>
 
       <div>
         <button
@@ -655,9 +494,7 @@ function App() {
 
         <button
           onClick={() =>
-            setCategory(
-              "Personal"
-            )
+            setCategory("Personal")
           }
         >
           Personal
@@ -665,9 +502,7 @@ function App() {
 
         <button
           onClick={() =>
-            setCategory(
-              "Education"
-            )
+            setCategory("Education")
           }
         >
           Education
@@ -675,9 +510,7 @@ function App() {
 
         <button
           onClick={() =>
-            setCategory(
-              "Identity"
-            )
+            setCategory("Identity")
           }
         >
           Identity
@@ -685,9 +518,7 @@ function App() {
 
         <button
           onClick={() =>
-            setCategory(
-              "Finance"
-            )
+            setCategory("Finance")
           }
         >
           Finance
@@ -695,9 +526,7 @@ function App() {
 
         <button
           onClick={() =>
-            setCategory(
-              "Work"
-            )
+            setCategory("Work")
           }
         >
           Work
@@ -705,89 +534,61 @@ function App() {
 
         <button
           onClick={() =>
-            setCategory(
-              "Other"
-            )
+            setCategory("Other")
           }
         >
           Other
         </button>
       </div>
 
-      <h2>
-        My Documents
-      </h2>
+      <h2>My Documents</h2>
 
       {documents.length === 0 ? (
-        <p>
-          No documents found.
-        </p>
+        <p>No documents found.</p>
       ) : (
-        documents.map(
-          (doc) => (
-            <div
-              key={doc.id}
+        documents.map((doc) => (
+          <div key={doc.id}>
+            <h3>{doc.name}</h3>
+
+            <p>{doc.category}</p>
+
+            <p>{doc.type}</p>
+
+            <p>{doc.size}</p>
+
+            <p>{doc.uploadedAt}</p>
+
+            {doc.filePath ? (
+              <>
+                <button
+                  onClick={() =>
+                    handleView(doc)
+                  }
+                >
+                  View
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleDownload(doc)
+                  }
+                >
+                  Download
+                </button>
+              </>
+            ) : (
+              <p>File not available</p>
+            )}
+
+            <button
+              onClick={() =>
+                handleDelete(doc.id)
+              }
             >
-              <h3>
-                {doc.name}
-              </h3>
-
-              <p>
-                {doc.category}
-              </p>
-
-              <p>
-                {doc.type}
-              </p>
-
-              <p>
-                {doc.size}
-              </p>
-
-              <p>
-                {doc.uploadedAt}
-              </p>
-
-              {doc.filePath ? (
-                <>
-                  <button
-                    onClick={() =>
-                      handleView(
-                        doc
-                      )
-                    }
-                  >
-                    View
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      handleDownload(
-                        doc
-                      )
-                    }
-                  >
-                    Download
-                  </button>
-                </>
-              ) : (
-                <p>
-                  File not available
-                </p>
-              )}
-
-              <button
-                onClick={() =>
-                  handleDelete(
-                    doc.id
-                  )
-                }
-              >
-                Delete
-              </button>
-            </div>
-          )
-        )
+              Delete
+            </button>
+          </div>
+        ))
       )}
     </>
   )
