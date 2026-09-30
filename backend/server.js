@@ -12,10 +12,27 @@ const jwt = require("jsonwebtoken")
 const app = express()
 
 // -------------------------
+// Paths
+// -------------------------
+
+const uploadDir = path.join(__dirname, "uploads")
+
+// Create uploads folder automatically
+fs.mkdirSync(uploadDir, { recursive: true })
+
+// -------------------------
 // Middleware
 // -------------------------
 
-app.use(cors())
+const allowedOrigin =
+  process.env.FRONTEND_URL || "http://localhost:5173"
+
+app.use(
+  cors({
+    origin: allowedOrigin,
+  })
+)
+
 app.use(express.json())
 
 // -------------------------
@@ -24,7 +41,8 @@ app.use(express.json())
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"]
-  const token = authHeader && authHeader.split(" ")[1]
+  const token =
+    authHeader && authHeader.split(" ")[1]
 
   if (!token) {
     return res.status(401).json({
@@ -32,16 +50,20 @@ const authenticateToken = (req, res, next) => {
     })
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({
-        error: "Invalid or expired token",
-      })
-    }
+  jwt.verify(
+    token,
+    process.env.JWT_SECRET,
+    (err, user) => {
+      if (err) {
+        return res.status(403).json({
+          error: "Invalid or expired token",
+        })
+      }
 
-    req.user = user
-    next()
-  })
+      req.user = user
+      next()
+    }
+  )
 }
 
 // -------------------------
@@ -70,7 +92,9 @@ db.connect((err) => {
 // -------------------------
 
 app.get("/", (req, res) => {
-  res.send("MyDocs Backend is working!")
+  res.json({
+    message: "MyDocs Backend is working!",
+  })
 })
 
 // -------------------------
@@ -78,14 +102,18 @@ app.get("/", (req, res) => {
 // -------------------------
 
 const storage = multer.diskStorage({
-  destination: "uploads/",
+  destination: uploadDir,
+
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname)
+    cb(
+      null,
+      Date.now() + "-" + file.originalname
+    )
   },
 })
 
 const upload = multer({
-  storage: storage,
+  storage,
 })
 
 // -------------------------
@@ -97,49 +125,65 @@ app.post("/api/register", async (req, res) => {
 
   if (!name || !email || !password) {
     return res.status(400).json({
-      error: "Name, email, and password are required",
+      error:
+        "Name, email, and password are required",
     })
   }
 
-  const normalizedEmail = email.toLowerCase().trim()
+  const normalizedEmail =
+    email.toLowerCase().trim()
 
-  const checkSql = "SELECT id FROM users WHERE email = ?"
+  const checkSql =
+    "SELECT id FROM users WHERE email = ?"
 
-  db.query(checkSql, [normalizedEmail], async (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        error: "Database error",
-      })
-    }
-
-    if (results.length > 0) {
-      return res.status(409).json({
-        error: "Email already registered",
-      })
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    const insertSql =
-      "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
-
-    db.query(
-      insertSql,
-      [name, normalizedEmail, hashedPassword],
-      (insertErr, result) => {
-        if (insertErr) {
-          return res.status(500).json({
-            error: "Registration failed",
-          })
-        }
-
-        res.status(201).json({
-          message: "Registration successful",
-          userId: result.insertId,
+  db.query(
+    checkSql,
+    [normalizedEmail],
+    async (err, results) => {
+      if (err) {
+        return res.status(500).json({
+          error: "Database error",
         })
       }
-    )
-  })
+
+      if (results.length > 0) {
+        return res.status(409).json({
+          error: "Email already registered",
+        })
+      }
+
+      const hashedPassword =
+        await bcrypt.hash(password, 10)
+
+      const insertSql = `
+        INSERT INTO users
+        (name, email, password)
+        VALUES (?, ?, ?)
+      `
+
+      db.query(
+        insertSql,
+        [
+          name,
+          normalizedEmail,
+          hashedPassword,
+        ],
+        (insertErr, result) => {
+          if (insertErr) {
+            return res.status(500).json({
+              error: "Registration failed",
+            })
+          }
+
+          res.status(201).json({
+            message:
+              "Registration successful",
+            userId: result.insertId,
+          })
+        }
+      )
+    }
+  )
 })
 
 // -------------------------
@@ -151,102 +195,143 @@ app.post("/api/login", (req, res) => {
 
   if (!email || !password) {
     return res.status(400).json({
-      error: "Email and password are required",
+      error:
+        "Email and password are required",
     })
   }
 
-  const normalizedEmail = email.toLowerCase().trim()
+  const normalizedEmail =
+    email.toLowerCase().trim()
 
-  const sql = "SELECT * FROM users WHERE email = ?"
+  const sql =
+    "SELECT * FROM users WHERE email = ?"
 
-  db.query(sql, [normalizedEmail], async (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        error: "Database error",
-      })
-    }
-
-    if (results.length === 0) {
-      return res.status(401).json({
-        error: "Invalid email or password",
-      })
-    }
-
-    const user = results[0]
-
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password
-    )
-
-    if (!passwordMatch) {
-      return res.status(401).json({
-        error: "Invalid email or password",
-      })
-    }
-
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
+  db.query(
+    sql,
+    [normalizedEmail],
+    async (err, results) => {
+      if (err) {
+        return res.status(500).json({
+          error: "Database error",
+        })
       }
-    )
 
-    res.json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-    })
-  })
+      if (results.length === 0) {
+        return res.status(401).json({
+          error:
+            "Invalid email or password",
+        })
+      }
+
+      const user = results[0]
+
+      const passwordMatch =
+        await bcrypt.compare(
+          password,
+          user.password
+        )
+
+      if (!passwordMatch) {
+        return res.status(401).json({
+          error:
+            "Invalid email or password",
+        })
+      }
+
+      const token = jwt.sign(
+        {
+          userId: user.id,
+          email: user.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1d",
+        }
+      )
+
+      res.json({
+        message: "Login successful",
+
+        token,
+
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      })
+    }
+  )
 })
 
 // -------------------------
 // GET DOCUMENTS
 // -------------------------
 
-app.get("/api/documents", authenticateToken, (req, res) => {
-  const search = req.query.search || ""
-  const category = req.query.category || "All"
+app.get(
+  "/api/documents",
+  authenticateToken,
+  (req, res) => {
+    const search =
+      req.query.search || ""
 
-  let sql = `
-    SELECT * FROM documents
-    WHERE user_id = ?
-  `
+    const category =
+      req.query.category || "All"
 
-  const values = [req.user.userId]
+    let sql = `
+      SELECT *
+      FROM documents
+      WHERE user_id = ?
+    `
 
-  if (search) {
-    sql += " AND (name LIKE ? OR category LIKE ?)"
-    values.push(`%${search}%`, `%${search}%`)
-  }
+    const values = [
+      req.user.userId,
+    ]
 
-  if (category !== "All") {
-    sql += " AND category = ?"
-    values.push(category)
-  }
+    if (search) {
+      sql += `
+        AND (
+          name LIKE ?
+          OR category LIKE ?
+        )
+      `
 
-  sql += " ORDER BY id DESC"
-
-  db.query(sql, values, (err, results) => {
-    if (err) {
-      console.log("Database query failed")
-
-      return res.status(500).json({
-        error: "Database error",
-      })
+      values.push(
+        `%${search}%`,
+        `%${search}%`
+      )
     }
 
-    res.json(results)
-  })
-})
+    if (category !== "All") {
+      sql +=
+        " AND category = ?"
+
+      values.push(category)
+    }
+
+    sql +=
+      " ORDER BY id DESC"
+
+    db.query(
+      sql,
+      values,
+      (err, results) => {
+        if (err) {
+          console.log(
+            "Database query failed"
+          )
+
+          return res.status(500).json({
+            error:
+              "Database error",
+          })
+        }
+
+        res.json(results)
+      }
+    )
+  }
+)
 
 // -------------------------
 // UPLOAD DOCUMENT
@@ -263,19 +348,39 @@ app.post(
       })
     }
 
-    const name = req.file.originalname
-    const type = req.file.mimetype
-    const size = req.file.size
-    const uploadedAt = new Date().toLocaleDateString()
-    const category = req.body.category || "Other"
+    const name =
+      req.file.originalname
 
-    const userId = req.user.userId
+    const type =
+      req.file.mimetype
 
-    const filePath = "/uploads/" + req.file.filename
+    const size =
+      req.file.size
+
+    const uploadedAt =
+      new Date().toLocaleDateString()
+
+    const category =
+      req.body.category || "Other"
+
+    const userId =
+      req.user.userId
+
+    const filePath =
+      "/uploads/" +
+      req.file.filename
 
     const sql = `
       INSERT INTO documents
-      (name, category, type, size, uploadedAt, filePath, user_id)
+      (
+        name,
+        category,
+        type,
+        size,
+        uploadedAt,
+        filePath,
+        user_id
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `
 
@@ -292,7 +397,9 @@ app.post(
       ],
       (err, result) => {
         if (err) {
-          console.log("Failed to save document information")
+          console.log(
+            "Failed to save document information"
+          )
 
           return res.status(500).json({
             error: "Database error",
@@ -300,7 +407,9 @@ app.post(
         }
 
         res.json({
-          message: "File uploaded and saved successfully",
+          message:
+            "File uploaded and saved successfully",
+
           id: result.insertId,
         })
       }
@@ -312,72 +421,17 @@ app.post(
 // SECURE VIEW
 // -------------------------
 
-app.get("/api/view/:id", authenticateToken, (req, res) => {
-  const id = req.params.id
-
-  const sql = `
-    SELECT filePath
-    FROM documents
-    WHERE id = ? AND user_id = ?
-  `
-
-  db.query(
-    sql,
-    [id, req.user.userId],
-    (err, results) => {
-      if (err) {
-        return res.status(500).json({
-          error: "Database error",
-        })
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({
-          error: "Document not found",
-        })
-      }
-
-      if (!results[0].filePath) {
-        return res.status(404).json({
-          error: "File not available",
-        })
-      }
-
-      const filename = path.basename(
-        results[0].filePath
-      )
-
-      const fullPath = path.join(
-        __dirname,
-        "uploads",
-        filename
-      )
-
-      if (!fs.existsSync(fullPath)) {
-        return res.status(404).json({
-          error: "File not found",
-        })
-      }
-
-      res.sendFile(fullPath)
-    }
-  )
-})
-
-// -------------------------
-// SECURE DOWNLOAD
-// -------------------------
-
 app.get(
-  "/api/download/:id",
+  "/api/view/:id",
   authenticateToken,
   (req, res) => {
     const id = req.params.id
 
     const sql = `
-      SELECT filePath, name
+      SELECT filePath
       FROM documents
-      WHERE id = ? AND user_id = ?
+      WHERE id = ?
+      AND user_id = ?
     `
 
     db.query(
@@ -392,29 +446,97 @@ app.get(
 
         if (results.length === 0) {
           return res.status(404).json({
-            error: "Document not found",
+            error:
+              "Document not found",
           })
         }
 
         if (!results[0].filePath) {
           return res.status(404).json({
-            error: "File not available",
+            error:
+              "File not available",
           })
         }
 
-        const filename = path.basename(
-          results[0].filePath
-        )
+        const filename =
+          path.basename(
+            results[0].filePath
+          )
 
-        const fullPath = path.join(
-          __dirname,
-          "uploads",
-          filename
-        )
+        const fullPath =
+          path.join(
+            uploadDir,
+            filename
+          )
 
         if (!fs.existsSync(fullPath)) {
           return res.status(404).json({
             error: "File not found",
+          })
+        }
+
+        res.sendFile(fullPath)
+      }
+    )
+  }
+)
+
+// -------------------------
+// SECURE DOWNLOAD
+// -------------------------
+
+app.get(
+  "/api/download/:id",
+  authenticateToken,
+  (req, res) => {
+    const id = req.params.id
+
+    const sql = `
+      SELECT filePath, name
+      FROM documents
+      WHERE id = ?
+      AND user_id = ?
+    `
+
+    db.query(
+      sql,
+      [id, req.user.userId],
+      (err, results) => {
+        if (err) {
+          return res.status(500).json({
+            error: "Database error",
+          })
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({
+            error:
+              "Document not found",
+          })
+        }
+
+        if (!results[0].filePath) {
+          return res.status(404).json({
+            error:
+              "File not available",
+          })
+        }
+
+        const filename =
+          path.basename(
+            results[0].filePath
+          )
+
+        const fullPath =
+          path.join(
+            uploadDir,
+            filename
+          )
+
+        if (!fs.existsSync(fullPath)) {
+          return res.status(404).json({
+            error:
+              "File not found",
           })
         }
 
@@ -443,79 +565,100 @@ app.delete(
       WHERE id = ?
     `
 
-    db.query(findSql, [id], (err, results) => {
-      if (err) {
-        return res.status(500).json({
-          error: "Database error",
-        })
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({
-          error: "Document not found",
-        })
-      }
-
-      if (
-        results[0].user_id !== req.user.userId
-      ) {
-        return res.status(403).json({
-          error: "You cannot delete this document",
-        })
-      }
-
-      const filePath = results[0].filePath
-
-      const deleteDocument = () => {
-        const deleteSql = `
-          DELETE FROM documents
-          WHERE id = ? AND user_id = ?
-        `
-
-        db.query(
-          deleteSql,
-          [id, req.user.userId],
-          (deleteErr) => {
-            if (deleteErr) {
-              return res.status(500).json({
-                error: "Database deletion failed",
-              })
-            }
-
-            res.json({
-              message:
-                "Document deleted successfully",
-            })
-          }
-        )
-      }
-
-      if (!filePath) {
-        deleteDocument()
-        return
-      }
-
-      const filename = path.basename(filePath)
-
-      const fullPath = path.join(
-        __dirname,
-        "uploads",
-        filename
-      )
-
-      fs.unlink(fullPath, (fileErr) => {
-        if (
-          fileErr &&
-          fileErr.code !== "ENOENT"
-        ) {
+    db.query(
+      findSql,
+      [id],
+      (err, results) => {
+        if (err) {
           return res.status(500).json({
-            error: "File deletion failed",
+            error: "Database error",
           })
         }
 
-        deleteDocument()
-      })
-    })
+        if (results.length === 0) {
+          return res.status(404).json({
+            error:
+              "Document not found",
+          })
+        }
+
+        if (
+          results[0].user_id !==
+          req.user.userId
+        ) {
+          return res.status(403).json({
+            error:
+              "You cannot delete this document",
+          })
+        }
+
+        const filePath =
+          results[0].filePath
+
+        const deleteDocument = () => {
+          const deleteSql = `
+            DELETE FROM documents
+            WHERE id = ?
+            AND user_id = ?
+          `
+
+          db.query(
+            deleteSql,
+            [
+              id,
+              req.user.userId,
+            ],
+            (deleteErr) => {
+              if (deleteErr) {
+                return res.status(500).json({
+                  error:
+                    "Database deletion failed",
+                })
+              }
+
+              res.json({
+                message:
+                  "Document deleted successfully",
+              })
+            }
+          )
+        }
+
+        if (!filePath) {
+          deleteDocument()
+          return
+        }
+
+        const filename =
+          path.basename(filePath)
+
+        const fullPath =
+          path.join(
+            uploadDir,
+            filename
+          )
+
+        fs.unlink(
+          fullPath,
+          (fileErr) => {
+            if (
+              fileErr &&
+              fileErr.code !==
+                "ENOENT"
+            ) {
+              return res
+                .status(500)
+                .json({
+                  error:
+                    "File deletion failed",
+                })
+            }
+
+            deleteDocument()
+          }
+        )
+      }
+    )
   }
 )
 
@@ -523,8 +666,15 @@ app.delete(
 // START SERVER
 // -------------------------
 
-app.listen(3000, () => {
-  console.log(
-    "Backend server is running on port 3000"
-  )
-})
+const PORT =
+  process.env.PORT || 3000
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `Backend server is running on port ${PORT}`
+    )
+  }
+)
