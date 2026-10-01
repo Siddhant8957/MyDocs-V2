@@ -12,38 +12,90 @@
     "Segoe UI",
     sans-serif;
 
-  color: #172033;
-  background: #f5f7ff;
+  color: #eef2ff;
+  background: #070b1a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
-html {
+html,
+body,
+#root {
+  min-width: 320px;
   min-height: 100%;
+  margin: 0;
 }
 
 body {
-  margin: 0;
-  min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
 
   background:
     radial-gradient(
-      circle at 10% 0%,
-      rgba(124, 92, 255, 0.18),
+      circle at 10% 10%,
+      rgba(99, 102, 241, 0.28),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 88% 20%,
+      rgba(168, 85, 247, 0.2),
       transparent 30%
     ),
     radial-gradient(
-      circle at 90% 20%,
-      rgba(99, 102, 241, 0.12),
-      transparent 28%
+      circle at 50% 100%,
+      rgba(59, 130, 246, 0.16),
+      transparent 38%
     ),
     linear-gradient(
       135deg,
-      #f8f9ff 0%,
-      #eef2ff 50%,
-      #f9fafb 100%
+      #060918 0%,
+      #0b1028 45%,
+      #10162f 100%
     );
+
+  background-attachment: fixed;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+
+  width: 260px;
+  height: 260px;
+
+  border-radius: 50%;
+
+  filter: blur(70px);
+  opacity: 0.28;
+
+  pointer-events: none;
+  z-index: -1;
+
+  animation: floatGlow 10s ease-in-out infinite alternate;
+}
+
+body::before {
+  left: -80px;
+  top: 25%;
+  background: #6366f1;
+}
+
+body::after {
+  right: -80px;
+  bottom: 10%;
+  background: #a855f7;
+  animation-delay: -4s;
+}
+
+@keyframes floatGlow {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(30px, -20px, 0) scale(1.14);
+  }
 }
 
 button,
@@ -56,71 +108,95 @@ button {
   cursor: pointer;
 }
 
+/* =========================
+   MAIN CONTAINER
+   ========================= */
+
 #root {
-  width: min(1120px, calc(100% - 40px));
-  min-height: 100vh;
+  width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 42px 0 70px;
+  padding: 46px 0 70px;
 }
 
-/* ---------- BRAND ---------- */
+/* =========================
+   LOGO
+   ========================= */
 
 .hero {
-  width: 118px;
-  height: 118px;
+  width: 110px;
+  height: 110px;
+
   margin: 0 auto 18px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 32px;
+  border-radius: 30px;
 
   background:
     linear-gradient(
       135deg,
-      #6675ff,
-      #7c3aed
+      rgba(99, 102, 241, 0.9),
+      rgba(168, 85, 247, 0.8)
     );
 
-  box-shadow:
-    0 20px 50px
-    rgba(91, 81, 230, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 
-  overflow: hidden;
+  box-shadow:
+    0 20px 60px rgba(79, 70, 229, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  animation: logoFloat 5s ease-in-out infinite;
 }
 
 .hero .base {
   display: block;
 
-  width: 88px !important;
-  height: 92px !important;
-
-  max-width: 88px;
-  max-height: 92px;
+  width: 78px !important;
+  height: 82px !important;
 
   object-fit: contain;
+
+  filter:
+    drop-shadow(0 7px 15px rgba(0, 0, 0, 0.25));
 }
+
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* =========================
+   HEADER
+   ========================= */
 
 header {
   text-align: center;
-  margin-bottom: 34px;
+  margin-bottom: 36px;
 }
 
 header h1 {
   margin: 0;
 
-  font-size: clamp(2.4rem, 5vw, 3.5rem);
+  font-size: clamp(2.5rem, 6vw, 4rem);
   line-height: 1;
 
-  font-weight: 850;
-  letter-spacing: -0.05em;
+  font-weight: 900;
+  letter-spacing: -0.06em;
 
   background:
     linear-gradient(
       90deg,
-      #4f46e5,
-      #7c3aed
+      #ffffff 0%,
+      #c7d2fe 42%,
+      #d8b4fe 100%
     );
 
   -webkit-background-clip: text;
@@ -129,339 +205,479 @@ header h1 {
 }
 
 header p {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
 
-  color: #667085;
-  font-size: 1.05rem;
+  color: #a8b1c7;
+
+  font-size: 1.03rem;
+  letter-spacing: 0.01em;
 }
 
-/* ---------- GENERIC CONTROLS ---------- */
-
-input,
-select {
-  border: 1px solid #d7dcef;
-  border-radius: 14px;
-
-  background: rgba(255, 255, 255, 0.95);
-  color: #172033;
-
-  outline: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-
-input:focus,
-select:focus {
-  border-color: #6366f1;
-
-  box-shadow:
-    0 0 0 4px
-    rgba(99, 102, 241, 0.12);
-}
-
-input::placeholder {
-  color: #98a2b3;
-}
-
-button {
-  border: 0;
-  border-radius: 13px;
-
-  padding: 11px 17px;
-
-  color: white;
-  font-weight: 700;
-
-  background:
-    linear-gradient(
-      135deg,
-      #5b65f1,
-      #7c3aed
-    );
-
-  box-shadow:
-    0 9px 22px
-    rgba(91, 101, 241, 0.2);
-
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-button:hover {
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 14px 28px
-    rgba(91, 101, 241, 0.25);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-/* ---------- LOGIN ---------- */
+/* =========================
+   LOGIN CARD
+   ========================= */
 
 header + div {
   width: min(470px, 100%);
+
   margin: 0 auto;
 
   padding: 32px;
 
+  border-radius: 28px;
+
   background:
-    rgba(255, 255, 255, 0.82);
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.09),
+      rgba(255, 255, 255, 0.045)
+    );
 
   border:
-    1px solid
-    rgba(255, 255, 255, 0.9);
+    1px solid rgba(255, 255, 255, 0.11);
 
-  border-radius: 26px;
+  backdrop-filter: blur(24px);
 
   box-shadow:
-    0 24px 70px
-    rgba(32, 41, 68, 0.12);
+    0 30px 80px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-  backdrop-filter: blur(18px);
+  animation: cardEnter 0.45s ease;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 header + div h2 {
-  margin: 0 0 20px;
+  margin: 0 0 22px;
+
+  color: white;
 
   text-align: center;
-  color: #1f2937;
-
-  font-size: 1.7rem;
+  font-size: 1.65rem;
 }
 
 header + div input {
   display: block;
 
   width: 100%;
-  max-width: none;
+  margin: 11px 0;
 
-  margin: 10px 0;
+  padding: 14px 16px;
 
-  padding: 13px 15px;
+  color: white;
+
+  background:
+    rgba(7, 11, 26, 0.55);
+
+  border:
+    1px solid rgba(255, 255, 255, 0.11);
+
+  border-radius: 14px;
+
+  outline: none;
+}
+
+header + div input::placeholder {
+  color: #77819a;
+}
+
+header + div input:focus {
+  border-color: rgba(129, 140, 248, 0.85);
+
+  box-shadow:
+    0 0 0 4px rgba(99, 102, 241, 0.12);
+
+  background:
+    rgba(7, 11, 26, 0.7);
 }
 
 header + div button {
   width: 100%;
-  margin: 8px 0;
+  margin-top: 9px;
 }
 
-header + div button + button {
-  color: #4f46e5;
-  background: #eef0ff;
-  box-shadow: none;
+/* =========================
+   BUTTONS
+   ========================= */
+
+button {
+  border: 0;
+
+  padding: 11px 17px;
+
+  border-radius: 13px;
+
+  color: white;
+  font-weight: 750;
+
+  background:
+    linear-gradient(
+      135deg,
+      #6366f1,
+      #8b5cf6
+    );
+
+  box-shadow:
+    0 9px 24px rgba(79, 70, 229, 0.26);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
 }
 
-header + div p {
-  margin-top: 14px;
-  text-align: center;
-  color: #667085;
+button:hover {
+  transform: translateY(-2px);
+
+  filter: brightness(1.08);
+
+  box-shadow:
+    0 14px 30px rgba(79, 70, 229, 0.34);
 }
 
-/* ---------- MAIN APP ---------- */
+button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* =========================
+   LOGOUT
+   ========================= */
 
 header + button {
   display: block;
+
   margin: 0 auto 28px;
 
   background:
     linear-gradient(
       135deg,
       #ef4444,
-      #dc2626
+      #b91c1c
     );
 
   box-shadow:
-    0 10px 22px
-    rgba(220, 38, 38, 0.18);
+    0 9px 24px rgba(239, 68, 68, 0.2);
 }
 
-/* Search input */
+/* =========================
+   SEARCH
+   ========================= */
 
 header + button + br + br + input {
   display: block;
 
-  width: min(680px, 100%);
-  max-width: none;
+  width: min(760px, 100%);
 
-  margin: 0 auto 20px;
+  margin: 0 auto 18px;
 
-  padding: 15px 17px;
+  padding: 16px 19px;
 
-  font-size: 1rem;
+  color: white;
+
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  border:
+    1px solid rgba(255, 255, 255, 0.11);
+
+  border-radius: 18px;
+
+  outline: none;
+
+  backdrop-filter: blur(12px);
+
+  box-shadow:
+    0 10px 35px rgba(0, 0, 0, 0.14);
 }
 
-/* Upload controls */
+header + button + br + br + input::placeholder {
+  color: #78829c;
+}
+
+header + button + br + br + input:focus {
+  border-color: rgba(129, 140, 248, 0.75);
+
+  box-shadow:
+    0 0 0 4px rgba(99, 102, 241, 0.12),
+    0 10px 35px rgba(0, 0, 0, 0.18);
+}
+
+/* =========================
+   CATEGORY SELECT
+   ========================= */
 
 select {
-  display: inline-block;
-
-  width: 190px;
-  margin: 0 8px 14px 0;
-
   padding: 12px 14px;
+
+  color: white;
+
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  border:
+    1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 14px;
+
+  outline: none;
+
+  backdrop-filter: blur(10px);
 }
+
+select:focus {
+  border-color: rgba(129, 140, 248, 0.75);
+}
+
+/* =========================
+   FILE PICKER
+   ========================= */
 
 input[type="file"] {
   display: block;
 
   width: 100%;
-  max-width: 100%;
 
-  margin: 0 0 12px;
-  padding: 10px;
+  margin: 14px 0;
 
-  border-radius: 14px;
+  padding: 13px;
+
+  color: #aeb8cf;
+
+  background:
+    rgba(255, 255, 255, 0.055);
+
+  border:
+    1px dashed rgba(129, 140, 248, 0.35);
+
+  border-radius: 16px;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+input[type="file"]:hover {
+  border-color: rgba(167, 139, 250, 0.75);
+
+  background:
+    rgba(99, 102, 241, 0.08);
 }
 
 input[type="file"]::file-selector-button {
   border: 0;
-  border-radius: 10px;
 
   padding: 9px 13px;
-  margin-right: 10px;
+  margin-right: 12px;
+
+  border-radius: 10px;
 
   color: white;
+
   background:
     linear-gradient(
       135deg,
-      #5b65f1,
+      #4f46e5,
       #7c3aed
     );
 
   cursor: pointer;
+
+  font-weight: 700;
+}
+
+input[type="file"]::file-selector-button:hover {
+  filter: brightness(1.1);
 }
 
 input[type="file"] + button {
-  display: block;
-
   width: 100%;
-  margin: 0 0 32px;
 
   padding: 14px;
+
+  margin-bottom: 12px;
 }
 
-/* ---------- CATEGORIES ---------- */
+/* =========================
+   STATUS MESSAGE
+   ========================= */
+
+input[type="file"] + button + p {
+  margin: 10px 0 25px;
+
+  padding: 11px 14px;
+
+  border-radius: 12px;
+
+  color: #c7d2fe;
+
+  background:
+    rgba(99, 102, 241, 0.1);
+
+  border:
+    1px solid rgba(129, 140, 248, 0.14);
+}
+
+/* =========================
+   CATEGORIES
+   ========================= */
 
 h3 {
-  margin: 24px 0 12px;
-
-  color: #344054;
+  color: #e5e7eb;
 }
 
 h3 + div {
   display: flex;
+
   flex-wrap: wrap;
-  gap: 8px;
+
+  gap: 9px;
 
   margin-bottom: 30px;
 }
 
 h3 + div button {
-  margin: 0;
-
   padding: 9px 14px;
 
-  color: #344054;
-  background: white;
+  color: #c8d0e4;
+
+  background:
+    rgba(255, 255, 255, 0.055);
 
   border:
-    1px solid
-    #d8ddef;
+    1px solid rgba(255, 255, 255, 0.09);
 
-  box-shadow:
-    0 4px 10px
-    rgba(31, 41, 55, 0.05);
+  box-shadow: none;
 }
 
 h3 + div button:hover {
-  color: #4f46e5;
-  border-color: #a5b4fc;
+  color: white;
+
+  background:
+    rgba(99, 102, 241, 0.17);
+
+  border-color:
+    rgba(129, 140, 248, 0.32);
 }
 
-/* ---------- DOCUMENTS ---------- */
+/* =========================
+   DOCUMENTS
+   ========================= */
 
 h2 {
-  margin: 0 0 16px;
+  margin: 18px 0;
 
-  color: #182230;
-  font-size: 1.65rem;
+  color: white;
+
+  font-size: 1.7rem;
+
+  letter-spacing: -0.03em;
 }
 
 h2 + p {
-  padding: 42px 20px;
+  padding: 44px 22px;
 
   text-align: center;
 
-  color: #667085;
+  color: #8993aa;
 
   border:
-    1px dashed
-    #cfd5e4;
+    1px dashed rgba(255, 255, 255, 0.12);
 
-  border-radius: 20px;
+  border-radius: 22px;
 
   background:
-    rgba(255, 255, 255, 0.62);
+    rgba(255, 255, 255, 0.035);
 }
 
-/*
-  Each document card is represented by a div
-  immediately following the document heading/list.
-*/
-
 h2 ~ div {
-  background: rgba(255, 255, 255, 0.92);
-
-  border:
-    1px solid
-    #e7eaf2;
-
-  border-radius: 20px;
+  position: relative;
 
   padding: 22px;
 
   margin: 14px 0;
 
+  border-radius: 22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.09),
+      rgba(255, 255, 255, 0.045)
+    );
+
+  border:
+    1px solid rgba(255, 255, 255, 0.09);
+
   box-shadow:
-    0 12px 34px
-    rgba(31, 41, 55, 0.07);
+    0 16px 45px rgba(0, 0, 0, 0.18);
+
+  backdrop-filter: blur(16px);
+
+  overflow: hidden;
 
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+h2 ~ div::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  width: 4px;
+  height: 100%;
+
+  background:
+    linear-gradient(
+      180deg,
+      #6366f1,
+      #a855f7
+    );
 }
 
 h2 ~ div:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+
+  border-color:
+    rgba(129, 140, 248, 0.22);
 
   box-shadow:
-    0 18px 40px
-    rgba(31, 41, 55, 0.1);
+    0 24px 55px rgba(0, 0, 0, 0.24);
 }
 
 h2 ~ div h3 {
-  margin: 0 0 10px;
+  margin: 0 0 11px;
 
-  color: #172033;
-  font-size: 1.08rem;
+  color: white;
+
+  font-size: 1.06rem;
 }
 
 h2 ~ div p {
   margin: 6px 0;
 
-  color: #667085;
-  font-size: 0.94rem;
+  color: #9ba6bd;
+
+  font-size: 0.93rem;
 }
 
 h2 ~ div button {
-  margin: 14px 6px 0 0;
+  margin: 14px 7px 0 0;
 }
 
 h2 ~ div button:last-child {
@@ -469,31 +685,38 @@ h2 ~ div button:last-child {
     linear-gradient(
       135deg,
       #ef4444,
-      #dc2626
+      #b91c1c
     );
+
+  box-shadow:
+    0 8px 20px rgba(239, 68, 68, 0.16);
 }
 
-/* ---------- RESPONSIVE ---------- */
+/* =========================
+   MOBILE
+   ========================= */
 
 @media (max-width: 700px) {
   #root {
-    width: min(100% - 24px, 1120px);
-    padding-top: 24px;
+    width: min(100% - 22px, 1120px);
+
+    padding-top: 28px;
   }
 
   .hero {
-    width: 92px;
-    height: 92px;
+    width: 88px;
+    height: 88px;
+
     border-radius: 24px;
   }
 
   .hero .base {
-    width: 68px !important;
-    height: 72px !important;
+    width: 62px !important;
+    height: 66px !important;
   }
 
   header h1 {
-    font-size: 2.5rem;
+    font-size: 2.7rem;
   }
 
   header p {
@@ -501,12 +724,15 @@ h2 ~ div button:last-child {
   }
 
   header + div {
-    padding: 22px;
+    padding: 23px;
   }
 
   select {
     width: 100%;
-    margin-right: 0;
+  }
+
+  h3 + div button {
+    flex: 1 1 auto;
   }
 
   h2 ~ div button {
