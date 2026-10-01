@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import heroImg from "./assets/hero.png"
 import "./App.css"
 
-// LIVE PRODUCTION BACKEND
 const API = "https://mydocs-v2-production.up.railway.app"
 
 function App() {
@@ -16,15 +15,19 @@ function App() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-
   const [authMessage, setAuthMessage] = useState("")
 
   const [documents, setDocuments] = useState([])
-
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("All")
+
   const [uploadCategory, setUploadCategory] =
     useState("Other")
+
+  // IMPORTANT:
+  // Choosing a file and uploading a file are now separate actions.
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [uploadMessage, setUploadMessage] = useState("")
 
   // =========================
   // LOAD DOCUMENTS
@@ -53,7 +56,10 @@ function App() {
         }
       )
 
-      if (response.status === 401 || response.status === 403) {
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
         localStorage.removeItem("token")
         setToken(null)
         return
@@ -65,7 +71,10 @@ function App() {
         setDocuments(data)
       }
     } catch (error) {
-      console.error("Failed to load documents:", error)
+      console.error(
+        "Failed to load documents:",
+        error
+      )
     }
   }
 
@@ -108,7 +117,8 @@ function App() {
 
       if (!response.ok) {
         setAuthMessage(
-          data.error || "Authentication failed"
+          data.error ||
+            "Authentication failed"
         )
         return
       }
@@ -122,7 +132,11 @@ function App() {
         setName("")
         setPassword("")
       } else {
-        localStorage.setItem("token", data.token)
+        localStorage.setItem(
+          "token",
+          data.token
+        )
+
         setToken(data.token)
         setPassword("")
         setAuthMessage("")
@@ -147,18 +161,47 @@ function App() {
   }
 
   // =========================
-  // UPLOAD
+  // CHOOSE FILE
   // =========================
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files[0]
+  const handleFileChange = (event) => {
+    const file =
+      event.target.files?.[0] || null
 
-    if (!file) return
+    setSelectedFile(file)
+
+    setUploadMessage(
+      file
+        ? `Selected: ${file.name}`
+        : ""
+    )
+  }
+
+  // =========================
+  // UPLOAD FILE
+  // =========================
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setUploadMessage(
+        "Please choose a file first."
+      )
+      return
+    }
 
     const formData = new FormData()
 
-    formData.append("file", file)
-    formData.append("category", uploadCategory)
+    formData.append(
+      "file",
+      selectedFile
+    )
+
+    formData.append(
+      "category",
+      uploadCategory
+    )
+
+    setUploadMessage("Uploading...")
 
     try {
       const response = await fetch(
@@ -175,7 +218,7 @@ function App() {
       const data = await response.json()
 
       if (!response.ok) {
-        console.error(
+        setUploadMessage(
           data.error || "Upload failed"
         )
         return
@@ -183,9 +226,29 @@ function App() {
 
       await loadDocuments()
 
-      event.target.value = ""
+      setSelectedFile(null)
+
+      setUploadMessage(
+        "Document uploaded successfully."
+      )
+
+      const fileInput =
+        document.getElementById(
+          "fileInput"
+        )
+
+      if (fileInput) {
+        fileInput.value = ""
+      }
     } catch (error) {
-      console.error("Upload failed:", error)
+      console.error(
+        "Upload failed:",
+        error
+      )
+
+      setUploadMessage(
+        "Upload failed. Please try again."
+      )
     }
   }
 
@@ -194,7 +257,8 @@ function App() {
   // =========================
 
   const handleView = async (doc) => {
-    const newWindow = window.open("", "_blank")
+    const newWindow =
+      window.open("", "_blank")
 
     try {
       const response = await fetch(
@@ -216,9 +280,11 @@ function App() {
         return
       }
 
-      const blob = await response.blob()
+      const blob =
+        await response.blob()
 
-      const url = URL.createObjectURL(blob)
+      const url =
+        URL.createObjectURL(blob)
 
       if (newWindow) {
         newWindow.location.href = url
@@ -230,7 +296,10 @@ function App() {
     } catch (error) {
       newWindow?.close()
 
-      console.error("View failed:", error)
+      console.error(
+        "View failed:",
+        error
+      )
     }
   }
 
@@ -253,14 +322,18 @@ function App() {
         console.error(
           "Unable to download document"
         )
+
         return
       }
 
-      const blob = await response.blob()
+      const blob =
+        await response.blob()
 
-      const url = URL.createObjectURL(blob)
+      const url =
+        URL.createObjectURL(blob)
 
-      const link = document.createElement("a")
+      const link =
+        document.createElement("a")
 
       link.href = url
       link.download = doc.name
@@ -275,7 +348,10 @@ function App() {
         URL.revokeObjectURL(url)
       }, 1000)
     } catch (error) {
-      console.error("Download failed:", error)
+      console.error(
+        "Download failed:",
+        error
+      )
     }
   }
 
@@ -295,18 +371,23 @@ function App() {
         }
       )
 
-      const data = await response.json()
+      const data =
+        await response.json()
 
       if (!response.ok) {
         console.error(
           data.error || "Delete failed"
         )
+
         return
       }
 
       await loadDocuments()
     } catch (error) {
-      console.error("Delete failed:", error)
+      console.error(
+        "Delete failed:",
+        error
+      )
     }
   }
 
@@ -329,7 +410,9 @@ function App() {
 
         <header>
           <h1>MyDocs</h1>
-          <p>Personal Document Vault</p>
+          <p>
+            Personal Document Vault
+          </p>
         </header>
 
         <div>
@@ -345,7 +428,9 @@ function App() {
               placeholder="Name"
               value={name}
               onChange={(event) =>
-                setName(event.target.value)
+                setName(
+                  event.target.value
+                )
               }
             />
           )}
@@ -355,7 +440,9 @@ function App() {
             placeholder="Email"
             value={email}
             onChange={(event) =>
-              setEmail(event.target.value)
+              setEmail(
+                event.target.value
+              )
             }
           />
 
@@ -364,7 +451,9 @@ function App() {
             placeholder="Password"
             value={password}
             onChange={(event) =>
-              setPassword(event.target.value)
+              setPassword(
+                event.target.value
+              )
             }
           />
 
@@ -412,7 +501,9 @@ function App() {
 
       <header>
         <h1>MyDocs</h1>
-        <p>Personal Document Vault</p>
+        <p>
+          Personal Document Vault
+        </p>
       </header>
 
       <button onClick={handleLogout}>
@@ -437,7 +528,9 @@ function App() {
       <select
         value={uploadCategory}
         onChange={(event) =>
-          setUploadCategory(event.target.value)
+          setUploadCategory(
+            event.target.value
+          )
         }
       >
         <option value="Personal">
@@ -465,21 +558,21 @@ function App() {
         </option>
       </select>
 
+      {/* CHOOSE FILE ONLY */}
       <input
         type="file"
         id="fileInput"
         onChange={handleFileChange}
       />
 
-      <button
-        onClick={() =>
-          document
-            .getElementById("fileInput")
-            .click()
-        }
-      >
-        + Upload Document
+      {/* UPLOAD ONLY WHEN CLICKED */}
+      <button onClick={handleUpload}>
+        Upload Document
       </button>
+
+      {uploadMessage && (
+        <p>{uploadMessage}</p>
+      )}
 
       <h3>Categories</h3>
 
@@ -551,11 +644,8 @@ function App() {
             <h3>{doc.name}</h3>
 
             <p>{doc.category}</p>
-
             <p>{doc.type}</p>
-
             <p>{doc.size}</p>
-
             <p>{doc.uploadedAt}</p>
 
             {doc.filePath ? (
@@ -577,7 +667,9 @@ function App() {
                 </button>
               </>
             ) : (
-              <p>File not available</p>
+              <p>
+                File not available
+              </p>
             )}
 
             <button
